@@ -51,11 +51,11 @@ class UserInfoScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoRow(Icons.person_outline, 'Username', userData!.username),
+                    //_buildInfoRow(Icons.person_outline, 'Username', userData!.username),
                     SizedBox(height: 12),
                     _buildInfoRow(Icons.email, 'Email', userData!.email),
                     SizedBox(height: 12),
-                    _buildInfoRow(Icons.phone, 'Phone', userData!.phone),
+                    //_buildInfoRow(Icons.phone, 'Phone', userData!.phone),
                   ],
                 ),
               ),

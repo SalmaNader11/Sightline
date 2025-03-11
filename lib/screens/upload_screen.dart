@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class UploadScreen extends StatefulWidget {
-  final Function(String) onFileUploaded;
+  final Function(Map<String, dynamic>) onFileUploaded; // Updated type
 
   UploadScreen({required this.onFileUploaded});
 
@@ -21,11 +21,17 @@ class _UploadScreenState extends State<UploadScreen> {
 
     if (result != null) {
       String filePath = result.files.single.path!;
+      String fileName = result.files.single.name; // Get the file name
       PdfDocument document = PdfDocument(inputBytes: await File(filePath).readAsBytes());
       String text = PdfTextExtractor(document).extractText();
       document.dispose();
 
-      widget.onFileUploaded(text); // Pass extracted text
+      // Pass a Map with name, timestamp, and optionally the extracted text
+      widget.onFileUploaded({
+        'name': fileName,
+        'timestamp': DateTime.now().toString(),
+        'text': text, // Optional: Include extracted text if needed later
+      });
     }
   }
 
@@ -34,7 +40,15 @@ class _UploadScreenState extends State<UploadScreen> {
     return Center(
       child: ElevatedButton(
         onPressed: _pickAndExtractPDF,
-        child: Text('Pick a File'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF1E90FF), // Match app theme
+          padding: EdgeInsets.symmetric(horizontal: 50, vertical: 20),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(
+          'Pick a File',
+          style: TextStyle(fontSize: 20, color: Colors.white),
+        ),
       ),
     );
   }

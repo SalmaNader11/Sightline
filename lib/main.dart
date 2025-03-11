@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'data/data_model/user_data.dart';
+import '../data/data_model/user_data.dart';
 import 'screens/registration_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/upload_screen.dart';
-import 'screens/favorite_screen.dart';
+import 'screens/tools_screen.dart';
 import 'screens/user_info.dart';
+import 'screens/settings_screen.dart';
+
+final ValueNotifier<bool> isDarkThemeNotifier = ValueNotifier(false);
 
 void main() {
   runApp(DyslexiaApp());
@@ -13,17 +16,60 @@ void main() {
 class DyslexiaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'slight line',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: RegistrationScreen(),
-      debugShowCheckedModeBanner: false,
+    return ValueListenableBuilder<bool>(
+      valueListenable: isDarkThemeNotifier,
+      builder: (context, isDarkTheme, child) {
+        return MaterialApp(
+          theme: isDarkTheme
+              ? ThemeData.dark().copyWith(
+            primaryColor: Colors.purple,
+            scaffoldBackgroundColor: Colors.black,
+            colorScheme: ColorScheme.dark(
+              primary: Colors.purple,
+              secondary: Colors.purpleAccent,
+              surface: Colors.black,
+              background: Colors.black,
+              onPrimary: Colors.white,
+              onSecondary: Colors.white,
+              onSurface: Colors.white,
+              onBackground: Colors.white,
+            ),
+            appBarTheme: AppBarTheme(backgroundColor: Colors.black),
+            bottomNavigationBarTheme: BottomNavigationBarThemeData(
+              backgroundColor: Colors.black,
+              selectedItemColor: Colors.purple,
+              unselectedItemColor: Colors.white70,
+            ),
+            cardColor: Colors.black,
+            dialogBackgroundColor: Colors.black,
+            dividerColor: Colors.purple[700],
+            textTheme: TextTheme(
+              bodyLarge: TextStyle(color: Colors.white),
+              bodyMedium: TextStyle(color: Colors.white),
+              titleLarge: TextStyle(color: Colors.white),
+              titleMedium: TextStyle(color: Colors.white),
+            ),
+            iconTheme: IconThemeData(color: Colors.purple),
+          )
+              : ThemeData(
+            primarySwatch: Colors.blue,
+            scaffoldBackgroundColor: Colors.white,
+            bottomNavigationBarTheme: BottomNavigationBarThemeData(
+              backgroundColor: Color(0xFF1E90FF),
+              selectedItemColor: Colors.white,
+              unselectedItemColor: Colors.black54,
+            ),
+          ),
+          home: RegistrationScreen(),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
-  final UserData? userData; // Accept user data
+  final UserData? userData;
 
   MainScreen({this.userData});
 
@@ -33,8 +79,10 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  List<String> _recentFiles = [];
-  List<String> _favoriteFiles = [];
+  List<Map<String, dynamic>> _recentFiles = [
+    {'name': 'file1.pdf', 'timestamp': DateTime.now().toString()},
+    {'name': 'file2.pdf', 'timestamp': DateTime.now().subtract(Duration(minutes: 5)).toString()},
+  ];
 
   late List<Widget> _screens;
 
@@ -42,25 +90,32 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _screens = [
-      HomeScreen(recentFiles: _recentFiles),
+      HomeScreen(
+        recentFiles: _recentFiles,
+        onFilesDeleted: _onFilesDeleted, // Pass the callback
+        onFileUploaded: _onFileUploaded, // Pass the onFileUploaded callback
+      ),
       UploadScreen(onFileUploaded: _onFileUploaded),
-      FavoritesScreen(favoriteFiles: _favoriteFiles, onAddFavorite: _addFavorite),
-      UserInfoScreen(userData: widget.userData), // Pass user data to UserInfoScreen
+      ToolsScreen(onFileUploaded: _onFileUploaded),
+      UserInfoScreen(userData: widget.userData),
+      SettingsScreen(),
     ];
   }
 
-  void _onFileUploaded(String fileText) {
+  void _onFileUploaded(Map<String, dynamic> file) {
     setState(() {
-      _recentFiles.insert(0, fileText);
+      _recentFiles.insert(0, file);
       if (_recentFiles.length > 5) _recentFiles.removeLast();
       _selectedIndex = 0;
     });
   }
 
-  void _addFavorite(String fileText) {
+  void _onFilesDeleted(List<int> indicesToDelete) {
     setState(() {
-      if (!_favoriteFiles.contains(fileText)) {
-        _favoriteFiles.add(fileText);
+      // Sort indices in descending order to avoid index shifting when removing
+      indicesToDelete.sort((a, b) => b.compareTo(a));
+      for (int index in indicesToDelete) {
+        _recentFiles.removeAt(index);
       }
     });
   }
@@ -75,21 +130,19 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('slight line'),
+        title: Text('Sight line'),
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.blue,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.upload_file), label: 'Upload'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorites'),
+          BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Tools'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User Info'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.yellow,
-        unselectedItemColor: Colors.white70,
         onTap: _onItemTapped,
       ),
     );
