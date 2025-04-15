@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../data/data_model/user_data.dart';
 import 'screens/registration_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/upload_screen.dart';
-import 'screens/tools_screen.dart';
 import 'screens/user_info.dart';
 import 'screens/settings_screen.dart';
 
@@ -95,8 +93,6 @@ class _MainScreenState extends State<MainScreen> {
         onFilesDeleted: _onFilesDeleted, // Pass the callback
         onFileUploaded: _onFileUploaded, // Pass the onFileUploaded callback
       ),
-      UploadScreen(onFileUploaded: _onFileUploaded),
-      ToolsScreen(onFileUploaded: _onFileUploaded),
       UserInfoScreen(userData: widget.userData),
       SettingsScreen(),
     ];
@@ -137,8 +133,6 @@ class _MainScreenState extends State<MainScreen> {
         type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.upload_file), label: 'Upload'),
-          BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Tools'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User Info'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],

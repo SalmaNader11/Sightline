@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'view_all_screen.dart';
-import 'smart_scan_screen.dart';
+import 'smart_scan/smart_scan_home_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
@@ -116,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SmartScanScreen(
+            builder: (context) => SmartScanHomeScreen(
               onFileUploaded: widget.onFileUploaded,
             ),
           ),
