@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'verification_code_screen.dart'; // Import new screen
-
-
+import '../services/firebase_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   @override
@@ -9,49 +7,50 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  // Correctly define _formKey as GlobalKey<FormState>
   final _formKey = GlobalKey<FormState>();
-  final _emailOrUsernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  bool _isLoading = false;
 
-  void _submitForgotPassword() {
-    // Check if the form is valid using _formKey.currentState
+  void _submitForgotPassword() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Verification code sent to ${_emailOrUsernameController.text}',
-          ),
-        ),
-      );
+      setState(() => _isLoading = true);
+      final email = _emailController.text.trim();
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VerificationCodeScreen(
-            emailOrUsername: _emailOrUsernameController.text,
+      try {
+        await FirebaseService().sendPasswordResetEmail(email);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reset link sent to $email'),
           ),
-        ),
-      );
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send reset link'),
+          ),
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('forget password'),
-      ),
+      appBar: AppBar(title: Text('forget password')),
       body: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(24.0),
           child: Form(
-            key: _formKey, // Attach the form key here
+            key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'Enter your email or username to reset your password',
+                  'Enter your email to reset your password',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
@@ -65,11 +64,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   child: Column(
                     children: [
                       TextFormField(
-                        controller: _emailOrUsernameController,
-                        decoration: InputDecoration(labelText: 'phone number', border: InputBorder.none),
+                        controller: _emailController,
+                        decoration: InputDecoration(labelText: 'Email', border: InputBorder.none),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter email or username';
+                            return 'Please enter your email';
+                          }
+                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                            return 'Enter a valid email';
                           }
                           return null;
                         },
@@ -79,13 +81,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: _submitForgotPassword,
+                  onPressed: _isLoading ? null : _submitForgotPassword,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF1E90FF),
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: Text('Reset', style: TextStyle(fontSize: 18, color: Colors.white)),
+                  child: _isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text('Reset', style: TextStyle(fontSize: 18, color: Colors.white)),
                 ),
                 SizedBox(height: 15),
                 TextButton(
@@ -107,7 +111,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   void dispose() {
-    _emailOrUsernameController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 }

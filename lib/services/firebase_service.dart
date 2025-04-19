@@ -51,6 +51,10 @@ class FirebaseService {
     await _auth.signOut();
   }
 
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
+  }
+
   Future<Map<String, dynamic>?> getUserPreferences(String uid) async {
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) return null;
@@ -83,6 +87,24 @@ class FirebaseService {
     if (user != null) {
       await user.updatePassword(newPassword);
     }
+  }
+
+  Future<void> reauthenticateAndChangePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null || user.email == null) {
+      throw Exception('User not logged in');
+    }
+
+    final cred = EmailAuthProvider.credential(
+      email: user.email!,
+      password: currentPassword,
+    );
+
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(newPassword);
   }
 
   String? get currentUserId => _auth.currentUser?.uid;

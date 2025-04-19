@@ -9,6 +9,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'extracted_text_screen.dart';
+import 'package:path/path.dart' as path;
+import '../services/file_upload_controller.dart';
+import '../models/document_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ExtractTextFromPdfScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onFileUploaded;
@@ -220,13 +224,28 @@ class _ExtractTextFromPdfScreenState extends State<ExtractTextFromPdfScreen> {
           
           print('Text saved to $filePath');
           
-          // Call the callback function with the file information
-          widget.onFileUploaded({
-            'name': fileName,
-            'timestamp': DateTime.now().toString(),
-            'type': 'pdf_extract',
-            'content': extractedText,
-          });
+          final user = FirebaseAuth.instance.currentUser;
+		  if (user != null) {
+  			final fileToUpload = File(filePath);
+
+ 			 final downloadUrl = await FileUploadController.uploadFileAndSaveMetadata(
+   			 file: fileToUpload,
+   			 fileName: fileName,
+    		 fileType: 'pdf_extract',
+    		 extractedText: extractedText,
+   			 userId: user.uid,
+ 			);
+
+ 			 widget.onFileUploaded({
+   			 'name': fileName,
+   			 'timestamp': DateTime.now().toString(),
+   			 'type': 'pdf_extract',
+   			 'url': downloadUrl,
+  			});
+		} else {
+ 			print(' User not logged in. Skipping upload.');
+			}
+
         } catch (e) {
           print('Error saving text file: $e');
         }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/data_model/user_data.dart';
-import 'registration_screen.dart'; // Import for sign-out navigation
+import '../services/firebase_service.dart';
+import 'registration_screen.dart';
 
 class UserInfoScreen extends StatefulWidget {
   final UserData? userData;
@@ -12,11 +13,10 @@ class UserInfoScreen extends StatefulWidget {
 }
 
 class _UserInfoScreenState extends State<UserInfoScreen> {
-  // Controllers for text fields
   final TextEditingController _currentPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  
+
   @override
   void dispose() {
     _currentPasswordController.dispose();
@@ -26,13 +26,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   }
 
   void _signOut(BuildContext context) {
-    // Navigate back to RegistrationScreen and remove MainScreen from the stack
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => RegistrationScreen()),
     );
   }
-  
+
   void _showChangePasswordDialog() {
     showDialog(
       context: context,
@@ -78,8 +77,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             child: Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              // Validate passwords
+            onPressed: () async {
               if (_currentPasswordController.text.isEmpty ||
                   _newPasswordController.text.isEmpty ||
                   _confirmPasswordController.text.isEmpty) {
@@ -88,32 +86,40 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                 );
                 return;
               }
-              
+
               if (_newPasswordController.text != _confirmPasswordController.text) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('New passwords don\'t match')),
                 );
                 return;
               }
-              
+
               if (_newPasswordController.text.length < 6) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Password must be at least 6 characters')),
                 );
                 return;
               }
-              
-              // Here you would typically update the password in your authentication system
-              // For this example, we'll just show a success message
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Password changed successfully')),
-              );
-              
-              // Clear controllers and close dialog
-              _currentPasswordController.clear();
-              _newPasswordController.clear();
-              _confirmPasswordController.clear();
-              Navigator.pop(context);
+
+              try {
+                await FirebaseService().reauthenticateAndChangePassword(
+                  currentPassword: _currentPasswordController.text.trim(),
+                  newPassword: _newPasswordController.text.trim(),
+                );
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Password changed successfully')),
+                );
+
+                _currentPasswordController.clear();
+                _newPasswordController.clear();
+                _confirmPasswordController.clear();
+                Navigator.pop(context);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to change password')),
+                );
+              }
             },
             child: Text('Change Password'),
           ),
@@ -121,7 +127,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
       ),
     );
   }
-  
+
   void _showSupportContactDialog() {
     showDialog(
       context: context,
@@ -147,7 +153,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
       ),
     );
   }
-  
+
   Widget _buildContactRow(IconData icon, String label, String value) {
     return Row(
       children: [
@@ -158,17 +164,11 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
             Text(
               value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -180,22 +180,17 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title with icon
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.person, 
-                  size: 30, 
-                  color: isDark ? Colors.purple : Colors.blue
-                ),
+                Icon(Icons.person, size: 30, color: isDark ? Colors.purple : Colors.blue),
                 SizedBox(width: 8),
                 Text(
                   'User Profile',
@@ -208,14 +203,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
               ],
             ),
             SizedBox(height: 20),
-            
-            // User data card
             if (widget.userData != null)
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Column(
@@ -223,7 +214,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     children: [
                       _buildInfoRow(Icons.email, 'Email', widget.userData!.email),
                       SizedBox(height: 20),
-                      // Change Password Button
                       Center(
                         child: ElevatedButton.icon(
                           onPressed: _showChangePasswordDialog,
@@ -243,9 +233,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             else
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text(
@@ -254,10 +242,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   ),
                 ),
               ),
-            
             SizedBox(height: 24),
-            
-            // Support Section
             Text(
               'Support',
               style: TextStyle(
@@ -269,9 +254,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             SizedBox(height: 12),
             Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: InkWell(
                 onTap: _showSupportContactDialog,
                 borderRadius: BorderRadius.circular(12),
@@ -279,34 +262,20 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   padding: EdgeInsets.all(16.0),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.support_agent,
-                        size: 24,
-                        color: isDark ? Colors.purple : Colors.blue,
-                      ),
+                      Icon(Icons.support_agent, size: 24, color: isDark ? Colors.purple : Colors.blue),
                       SizedBox(width: 16),
                       Text(
                         'Contact Support',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                       ),
                       Spacer(),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: Colors.grey,
-                      ),
+                      Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                     ],
                   ),
                 ),
               ),
             ),
-            
             SizedBox(height: 30),
-            
-            // Sign Out button
             Center(
               child: ElevatedButton.icon(
                 onPressed: () => _signOut(context),
@@ -316,9 +285,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ),
@@ -329,7 +296,6 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     );
   }
 
-  // Helper method to build each info row with icon and text
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [

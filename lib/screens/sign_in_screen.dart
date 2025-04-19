@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../data/data_model/user_data.dart';
-import '../main.dart';
+import '../controllers/sign_in_controller.dart';
+import '../models/user_data.dart';
 import 'registration_screen.dart';
 import 'forget_password_screen.dart';
+import 'main_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   @override
@@ -10,32 +11,34 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  final _formKey = GlobalKey<FormState>(); // Ensure this is correctly defined
-  final _emailOrUsernameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  void _submitSignIn() {
-    print('Submitting sign-in...'); // Debug print
+  void _submitSignIn() async {
     if (_formKey.currentState!.validate()) {
-      print('Sign-in form is valid'); // Debug print
-      UserData userData = UserData(
-        // username: _emailOrUsernameController.text,
-        email: '',
-        // phone: '',
-        password: _passwordController.text,
-      );
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(
-            'Signed in with: ${_emailOrUsernameController.text}')),
-      );
+      final controller = SignInController();
+      final result = await controller.signIn(email, password);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MainScreen(userData: userData)),
-      );
-    } else {
-      print('Sign-in form validation failed'); // Debug print
+      if (result.userData != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Signed in successfully')),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainScreen(userData: result.userData!),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.error ?? 'Sign-in failed')),
+        );
+      }
     }
   }
 
@@ -58,19 +61,21 @@ class _SignInScreenState extends State<SignInScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Login here'),
+        backgroundColor: Color(0xFF1E90FF),
       ),
       body: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(24.0),
           child: Form(
-            key: _formKey, // Ensure the form key is attached
+            key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Welcome back you\'ve been missed!',
-                  style: TextStyle(fontSize: 24,
+                  style: TextStyle(
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87),
                   textAlign: TextAlign.center,
@@ -85,12 +90,14 @@ class _SignInScreenState extends State<SignInScreen> {
                   child: Column(
                     children: [
                       TextFormField(
-                        controller: _emailOrUsernameController,
+                        controller: _emailController,
                         decoration: InputDecoration(
-                            labelText: 'Email', border: InputBorder.none),
+                          labelText: 'Email',
+                          border: InputBorder.none,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter email or username';
+                            return 'Please enter your email';
                           }
                           return null;
                         },
@@ -99,7 +106,9 @@ class _SignInScreenState extends State<SignInScreen> {
                       TextFormField(
                         controller: _passwordController,
                         decoration: InputDecoration(
-                            labelText: 'Password', border: InputBorder.none),
+                          labelText: 'Password',
+                          border: InputBorder.none,
+                        ),
                         obscureText: true,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -124,7 +133,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
                 SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _submitSignIn, // Ensure this is correctly wired
+                  onPressed: _submitSignIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF1E90FF),
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
@@ -150,4 +159,10 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 }

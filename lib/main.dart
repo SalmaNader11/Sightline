@@ -4,10 +4,17 @@ import 'screens/registration_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/user_info.dart';
 import 'screens/settings_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; 
+
 
 final ValueNotifier<bool> isDarkThemeNotifier = ValueNotifier(false);
 
 void main() {
+	void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+	}
   runApp(DyslexiaApp());
 }
 
@@ -126,7 +133,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Sight line'),
+        title: Text('Sightline'),
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(

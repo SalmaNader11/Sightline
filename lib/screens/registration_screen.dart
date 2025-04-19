@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../data/data_model/user_data.dart';
 import '../main.dart';
+import '../models/user_data.dart';
+import '../controllers/registration_controller.dart';
 import 'sign_in_screen.dart';
+import 'main_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -14,25 +16,29 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  void _submitForm() {
-    print('Submitting form...'); // Debug print
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      print('Form is valid'); // Debug print
-      UserData userData = UserData(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registered: ${userData.toString()}')),
-      );
+      final controller = RegistrationController();
+      final result = await controller.registerUser(email, password);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MainScreen(userData: userData)),
-      );
-    } else {
-      print('Form validation failed'); // Debug print
+      if (result.userData != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registered successfully')),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MainScreen(userData: result.userData!),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.error ?? 'Registration failed')),
+        );
+      }
     }
   }
 
@@ -48,7 +54,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Create Account'),
-        backgroundColor: Color(0xFF1E90FF), // Match your app’s theme
+        backgroundColor: Color(0xFF1E90FF),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -61,9 +67,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               children: [
                 Text(
                   'Create Your Account',
-                  style: TextStyle(fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 30),
@@ -78,7 +86,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       TextFormField(
                         controller: _emailController,
                         decoration: InputDecoration(
-                            labelText: 'Email', border: InputBorder.none),
+                          labelText: 'Email',
+                          border: InputBorder.none,
+                        ),
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -94,7 +104,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       TextFormField(
                         controller: _passwordController,
                         decoration: InputDecoration(
-                            labelText: 'Password', border: InputBorder.none),
+                          labelText: 'Password',
+                          border: InputBorder.none,
+                        ),
                         obscureText: true,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -110,8 +122,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       TextFormField(
                         controller: _confirmPasswordController,
                         decoration: InputDecoration(
-                            labelText: 'Confirm Password',
-                            border: InputBorder.none),
+                          labelText: 'Confirm Password',
+                          border: InputBorder.none,
+                        ),
                         obscureText: true,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -133,10 +146,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     backgroundColor: Color(0xFF1E90FF),
                     padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  child: Text('Sign Up',
-                      style: TextStyle(fontSize: 18, color: Colors.white)),
+                  child: Text(
+                    'Sign Up',
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
                 ),
                 SizedBox(height: 15),
                 TextButton(
@@ -152,5 +168,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 }
