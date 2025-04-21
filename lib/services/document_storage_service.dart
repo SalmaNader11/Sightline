@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/document_model.dart';
 
@@ -10,56 +9,79 @@ class DocumentStorageService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  ///  Upload using file picker + save to Firestore
-  Future<void> uploadFile() async {
+  /// Upload a file to Firebase Storage and save metadata to Firestore
+  Future<DocumentModel?> uploadFile({
+    required File file,
+    required String type,
+    String? extractedText,
+    String? styledPath,
+    String? audioPath,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception("User not logged in");
 
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'png', 'jpeg', 'txt', 'docx'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      final fileName = result.files.single.name;
+    try {
+      final fileName = file.path.split('/').last;
       final docId = _firestore.collection('documents').doc().id;
+      final storagePath = 'uploads/${user.uid}/originals/$fileName';
 
-      // Upload to Firebase Storage
-      final downloadUrl = await uploadRawFile(file, user.uid, fileName);
+      // Upload the file
+      final ref = _storage.ref().child(storagePath);
+      await ref.putFile(file);
+      final downloadUrl = await ref.getDownloadURL();
 
       // Create document metadata
       final document = DocumentModel(
         id: docId,
         userId: user.uid,
         fileName: fileName,
+        fileType: type,
+        originalFilePath: storagePath,
         url: downloadUrl,
+        processedText: extractedText,
+        audioPath: audioPath,
+        styledPath: styledPath,
+        status: extractedText != null ? "processed" : "pending",
         uploadedAt: DateTime.now(),
       );
 
-      // Save to Firestore
+      // Save metadata to Firestore
       await _firestore.collection('documents').doc(docId).set(document.toMap());
+      return document;
+    } catch (e) {
+      print("Upload failed: $e");
+      return null;
     }
   }
 
-  ///  Upload file directly and return download URL (reusable)
-  Future<String> uploadRawFile(File file, String userId, String fileName) async {
+  /// Delete a file and its metadata
+  Future<void> deleteFile(DocumentModel doc) async {
     try {
-      final ref = _storage.ref().child('documents/$userId/$fileName');
-      final uploadTask = await ref.putFile(file);
-      return await uploadTask.ref.getDownloadURL();
+      await _firestore.collection('documents').doc(doc.id).delete();
+      await _storage.ref().child(doc.originalFilePath).delete();
     } catch (e) {
-      throw Exception('Upload failed: $e');
+      print('Delete failed: $e');
     }
   }
 
-  /// Delete file from Firebase Storage
-  Future<void> deleteFile(String userId, String fileName) async {
+  /// Get all documents for current user
+  Future<List<DocumentModel>> getUserDocuments() async {
+    final user = _auth.currentUser;
+    if (user == null) return [];
+
     try {
-      final ref = _storage.ref().child('documents/$userId/$fileName');
-      await ref.delete();
+      final snapshot = await _firestore
+          .collection('documents')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('uploadTimestamp', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        return DocumentModel.fromMap(doc.data(), doc.id);
+      }).toList();
     } catch (e) {
-      print('Delete failed or file not found: $e');
+      print('Failed to fetch documents: $e');
+      return [];
     }
   }
 }

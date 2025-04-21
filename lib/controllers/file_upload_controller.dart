@@ -11,32 +11,42 @@ class FileUploadController {
   Future<DocumentModel?> uploadFile({
     required File file,
     required String uid,
-    required String type, 
+    required String type,
+    String? processedText,
+    String? audioPath,
+    String? styledPath,
   }) async {
     try {
-      // Get file extension & unique filename
       final fileName = _uuid.v4() + path.extension(file.path);
       final storagePath = 'documents/$uid/$fileName';
 
-      // Upload to Firebase Storage
+      
       final url = await _firebaseService.uploadFileToStorage(file, storagePath);
 
-      // Create metadata
+      
+      final docId = _firebaseService.firestore.collection('documents').doc().id;
+
+      
       final doc = DocumentModel(
-        id: '',
+        id: docId,
         uid: uid,
         name: path.basename(file.path),
         url: url,
         type: type,
         uploadedAt: DateTime.now(),
+        originalFilePath: storagePath,
+        processedText: processedText ?? '',
+        audioPath: audioPath ?? '',
+        styledPath: styledPath ?? '',
+        status: 'processed',
       );
 
-      // Save metadata to Firestore
-      await _firebaseService.saveDocumentMetadata(doc);
+      
+      await _firebaseService.firestore.collection('documents').doc(docId).set(doc.toMap());
 
       return doc;
     } catch (e) {
-      print(' File upload failed: $e');
+      print('File upload failed: $e');
       return null;
     }
   }

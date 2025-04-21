@@ -8,15 +8,18 @@ import 'package:file_picker/file_picker.dart';
 import 'extract_text_from_pdf_screen.dart';
 import 'text_to_speech_screen.dart';
 import 'change_pdf_font_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../controllers/document_controller.dart';
+import '../models/document_model.dart';
 
 class HomeScreen extends StatefulWidget {
   final List<Map<String, dynamic>> recentFiles;
-  final Function(List<int>) onFilesDeleted; // Callback to notify MainScreen of deletions
-  final Function(Map<String, dynamic>) onFileUploaded; // Callback to add new files
+  final Function(List<int>) onFilesDeleted;
+  final Function(Map<String, dynamic>) onFileUploaded;
 
   const HomeScreen({
-    Key? key, 
-    required this.recentFiles, 
+    Key? key,
+    required this.recentFiles,
     required this.onFilesDeleted,
     required this.onFileUploaded,
   }) : super(key: key);
@@ -30,6 +33,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late TabController _tabController;
   int _currentTabIndex = 0;
 
+  final DocumentController _documentController = DocumentController();
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +44,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _currentTabIndex = _tabController.index;
       });
     });
+
+    _fetchDocuments(); 
+  }
+
+  Future<void> _fetchDocuments() async {
+    await _documentController.fetchUserDocuments();
+    final files = _documentController.documents.map((doc) => {
+      'name': doc.name,
+      'path': doc.url,
+      'timestamp': doc.uploadedAt.toString(),
+      'type': doc.type,
+      'text': doc.processedText ?? '',
+    }).toList();
+    for (final file in files) {
+      widget.onFileUploaded(file);
+    }
   }
 
   @override
@@ -46,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _tabController.dispose();
     super.dispose();
   }
+
 
   // Show confirmation dialog before deleting
   Future<bool> _confirmDelete(BuildContext context) async {
@@ -77,26 +99,36 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         allowedExtensions: ['pdf'],
       );
       
-      if (result != null) {
-        File file = File(result.files.single.path!);
-        final fileName = result.files.single.name;
-        final timestamp = DateTime.now().toString();
-        
-        // Create a new file entry
-        Map<String, dynamic> newFile = {
-          'name': fileName,
-          'path': file.path,
-          'timestamp': timestamp,
-          'type': 'pdf',
-        };
-        
-        // Add to recent files
-        widget.onFileUploaded(newFile);
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF uploaded: $fileName')),
-        );
-      }
+if (result != null) {
+  File file = File(result.files.single.path!);
+  final user = FirebaseAuth.instance.currentUser;
+
+  if (user == null) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User not logged in')));
+    return;
+  }
+
+  final uploadedDoc = await _documentController.uploadDocument(
+    file: file,
+    type: 'pdf',
+  );
+
+  if (uploadedDoc != null) {
+    Map<String, dynamic> newFile = {
+      'name': uploadedDoc.name,
+      'path': uploadedDoc.url,
+      'timestamp': uploadedDoc.uploadedAt.toString(),
+      'type': uploadedDoc.type,
+      'text': '', 
+    };
+
+    widget.onFileUploaded(newFile);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Uploaded: ${uploadedDoc.name}')));
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed')));
+  }
+}
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error picking PDF: $e')),
@@ -249,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ViewAllScreen(recentFiles: widget.recentFiles),
+                            builder: (context) => ViewAllScreen(),
                           ),
                         );
                       },

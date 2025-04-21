@@ -1,19 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DocumentModel {
-  final String id;         
-  final String uid;        
-  final String name;       
-  final String url;        
-  final String type;       
+  final String id;
+  final String uid;
+  final String fileName;
+  final String fileType;
+  final String url;
+  final String originalFilePath;
+  final String? processedText;
+  final String? audioPath;
+  final String? styledPath;
+  final String status;
   final DateTime uploadedAt;
 
   DocumentModel({
     required this.id,
     required this.uid,
-    required this.name,
+    required this.fileName,
+    required this.fileType,
     required this.url,
-    required this.type,
+    required this.originalFilePath,
+    this.processedText,
+    this.audioPath,
+    this.styledPath,
+    required this.status,
     required this.uploadedAt,
   });
 
@@ -21,25 +31,35 @@ class DocumentModel {
     return DocumentModel(
       id: id,
       uid: map['uid'] ?? '',
-      name: map['name'] ?? '',
+      fileName: map['fileName'] ?? '',
+      fileType: map['fileType'] ?? '',
       url: map['url'] ?? '',
-      type: map['type'] ?? 'unknown',
-      uploadedAt: (map['uploadedAt'] as Timestamp).toDate(),
+      originalFilePath: map['originalFilePath'] ?? '',
+      processedText: map['processedText'],
+      audioPath: map['audioPath'],
+      styledPath: map['styledPath'],
+      status: map['status'] ?? 'pending',
+      uploadedAt: (map['uploadTimestamp'] as Timestamp).toDate(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
-      'name': name,
+      'fileName': fileName,
+      'fileType': fileType,
       'url': url,
-      'type': type,
-      'uploadedAt': Timestamp.fromDate(uploadedAt),
+      'originalFilePath': originalFilePath,
+      'processedText': processedText,
+      'audioPath': audioPath,
+      'styledPath': styledPath,
+      'status': status,
+      'uploadTimestamp': Timestamp.fromDate(uploadedAt),
     };
   }
 
   @override
   String toString() {
-    return 'DocumentModel(name: $name, type: $type, uploadedAt: $uploadedAt)';
+    return 'DocumentModel(fileName: $fileName, type: $fileType, status: $status, uploadedAt: $uploadedAt)';
   }
 }

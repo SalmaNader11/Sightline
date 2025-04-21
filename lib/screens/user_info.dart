@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../data/data_model/user_data.dart';
 import '../services/firebase_service.dart';
-import 'registration_screen.dart';
+import '../providers/auth_provider.dart';
+import 'sign_in_screen.dart';
 
 class UserInfoScreen extends StatefulWidget {
   final UserData? userData;
@@ -25,10 +27,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
     super.dispose();
   }
 
-  void _signOut(BuildContext context) {
-    Navigator.pushReplacement(
+  void _signOut(BuildContext context) async {
+    await Provider.of<AuthProvider>(context, listen: false).logout();
+    Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => RegistrationScreen()),
+      MaterialPageRoute(builder: (_) => SignInScreen()),
+      (route) => false,
     );
   }
 
@@ -41,63 +45,32 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: _currentPasswordController,
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
-              ),
+              _buildPasswordField(_currentPasswordController, 'Current Password'),
               SizedBox(height: 16),
-              TextField(
-                controller: _newPasswordController,
-                decoration: InputDecoration(
-                  labelText: 'New Password',
-                  border: OutlineInputBorder(),
-                  helperText: 'At least 6 characters',
-                ),
-                obscureText: true,
-              ),
+              _buildPasswordField(_newPasswordController, 'New Password'),
               SizedBox(height: 16),
-              TextField(
-                controller: _confirmPasswordController,
-                decoration: InputDecoration(
-                  labelText: 'Confirm New Password',
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
-              ),
+              _buildPasswordField(_confirmPasswordController, 'Confirm New Password'),
             ],
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               if (_currentPasswordController.text.isEmpty ||
                   _newPasswordController.text.isEmpty ||
                   _confirmPasswordController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('All fields are required')),
-                );
+                _showError('All fields are required');
                 return;
               }
 
               if (_newPasswordController.text != _confirmPasswordController.text) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('New passwords don\'t match')),
-                );
+                _showError('New passwords don\'t match');
                 return;
               }
 
               if (_newPasswordController.text.length < 6) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Password must be at least 6 characters')),
-                );
+                _showError('Password must be at least 6 characters');
                 return;
               }
 
@@ -106,19 +79,11 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                   currentPassword: _currentPasswordController.text.trim(),
                   newPassword: _newPasswordController.text.trim(),
                 );
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Password changed successfully')),
-                );
-
-                _currentPasswordController.clear();
-                _newPasswordController.clear();
-                _confirmPasswordController.clear();
                 Navigator.pop(context);
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to change password')),
-                );
+                _clearFields();
+                _showSnack('Password changed successfully');
+              } catch (_) {
+                _showError('Failed to change password');
               }
             },
             child: Text('Change Password'),
@@ -126,6 +91,28 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildPasswordField(TextEditingController controller, String label) {
+    return TextField(
+      controller: controller,
+      obscureText: true,
+      decoration: InputDecoration(labelText: label, border: OutlineInputBorder()),
+    );
+  }
+
+  void _clearFields() {
+    _currentPasswordController.clear();
+    _newPasswordController.clear();
+    _confirmPasswordController.clear();
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   void _showSupportContactDialog() {
@@ -141,15 +128,10 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             SizedBox(height: 16),
             _buildContactRow(Icons.phone, 'Phone', '+1 (123) 456-7890'),
             SizedBox(height: 16),
-            _buildContactRow(Icons.chat, 'Live Chat', 'Available 9am-5pm EST'),
+            _buildContactRow(Icons.chat, 'Live Chat', 'Available 9am–5pm EST'),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          ),
-        ],
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('Close'))],
       ),
     );
   }
@@ -162,15 +144,28 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            ),
-            Text(
-              value,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
+            Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: [
+        Icon(icon, color: isDark ? Colors.purple : Colors.blue, size: 24),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[400] : Colors.grey[600])),
+              Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: isDark ? Colors.white : Colors.black87)),
+            ],
+          ),
         ),
       ],
     );
@@ -180,150 +175,95 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final user = widget.userData;
 
     return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.person, size: 30, color: isDark ? Colors.purple : Colors.blue),
-                SizedBox(width: 8),
-                Text(
-                  'User Profile',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.blueGrey[800],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 20),
-            if (widget.userData != null)
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildInfoRow(Icons.email, 'Email', widget.userData!.email),
-                      SizedBox(height: 20),
-                      Center(
-                        child: ElevatedButton.icon(
-                          onPressed: _showChangePasswordDialog,
-                          icon: Icon(Icons.lock_outline),
-                          label: Text('Change Password'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isDark ? Colors.purple : Colors.blue,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    'No user data available',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ),
-              ),
-            SizedBox(height: 24),
-            Text(
-              'Support',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.blueGrey[800],
-              ),
-            ),
-            SizedBox(height: 12),
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.person, size: 30, color: isDark ? Colors.purple : Colors.blue),
+              SizedBox(width: 8),
+              Text('User Profile', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.blueGrey[800])),
+            ],
+          ),
+          SizedBox(height: 20),
+          if (user != null)
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: InkWell(
-                onTap: _showSupportContactDialog,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.support_agent, size: 24, color: isDark ? Colors.purple : Colors.blue),
-                      SizedBox(width: 16),
-                      Text(
-                        'Contact Support',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    _buildInfoRow(Icons.email, 'Email', user.email),
+                    SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: _showChangePasswordDialog,
+                      icon: Icon(Icons.lock_outline),
+                      label: Text('Change Password'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? Colors.purple : Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       ),
-                      Spacer(),
-                      Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('No user data available', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              ),
+            ),
+          SizedBox(height: 24),
+          Text('Support', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.blueGrey[800])),
+          SizedBox(height: 12),
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: InkWell(
+              onTap: _showSupportContactDialog,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.support_agent, size: 24, color: isDark ? Colors.purple : Colors.blue),
+                    SizedBox(width: 16),
+                    Text('Contact Support', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                    Spacer(),
+                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                  ],
                 ),
               ),
             ),
-            SizedBox(height: 30),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () => _signOut(context),
-                icon: Icon(Icons.logout),
-                label: Text('Sign Out'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, color: Theme.of(context).brightness == Brightness.dark ? Colors.purple : Colors.blue, size: 24),
-        SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
           ),
-        ),
-      ],
+          SizedBox(height: 30),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () => _signOut(context),
+              icon: Icon(Icons.logout),
+              label: Text('Sign Out'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+        ],
+      ),
     );
   }
 }
