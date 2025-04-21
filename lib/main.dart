@@ -3,11 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
-import '../data/data_model/user_data.dart';
+import 'models/user_data.dart';
 import 'screens/home_screen.dart';
 import 'screens/user_info.dart';
 import 'screens/settings_screen.dart';
-import 'screens/sign_in_screen.dart'; // ✅ Add this import
+import 'screens/sign_in_screen.dart'; 
 
 final ValueNotifier<bool> isDarkThemeNotifier = ValueNotifier(false);
 
