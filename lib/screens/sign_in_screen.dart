@@ -3,7 +3,7 @@ import '../controllers/sign_in_controller.dart';
 import '../models/user_data.dart';
 import 'registration_screen.dart';
 import 'forget_password_screen.dart';
-import 'main_screen.dart';
+import '../main.dart';
 
 class SignInScreen extends StatefulWidget {
   @override

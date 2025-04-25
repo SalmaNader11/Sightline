@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserData {
   final String uid;
   final String email;
@@ -30,6 +32,22 @@ class UserData {
       'lastLogin': Timestamp.fromDate(lastLogin),
       'preferences': preferences,
     };
+  }
+
+  UserData copyWith({
+    String? uid,
+    String? email,
+    DateTime? createdAt,
+    DateTime? lastLogin,
+    Map<String, dynamic>? preferences,
+  }) {
+    return UserData(
+      uid: uid ?? this.uid,
+      email: email ?? this.email,
+      createdAt: createdAt ?? this.createdAt,
+      lastLogin: lastLogin ?? this.lastLogin,
+      preferences: preferences ?? Map<String, dynamic>.from(this.preferences),
+    );
   }
 
   @override

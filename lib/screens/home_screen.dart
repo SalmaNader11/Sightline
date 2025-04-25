@@ -51,10 +51,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Future<void> _fetchDocuments() async {
     await _documentController.fetchUserDocuments();
     final files = _documentController.documents.map((doc) => {
-      'name': doc.name,
+      'name': doc.fileName,
       'path': doc.url,
       'timestamp': doc.uploadedAt.toString(),
-      'type': doc.type,
+      'type': doc.fileType,
       'text': doc.processedText ?? '',
     }).toList();
     for (final file in files) {
@@ -99,37 +99,43 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         allowedExtensions: ['pdf'],
       );
       
-if (result != null) {
-  File file = File(result.files.single.path!);
-  final user = FirebaseAuth.instance.currentUser;
+      if (result != null && result.files.single.path != null) {
+        File file = File(result.files.single.path!);
+        final user = FirebaseAuth.instance.currentUser;
 
-  if (user == null) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User not logged in')));
-    return;
-  }
+        if (user == null) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User not logged in')));
+          return;
+        }
 
-  final uploadedDoc = await _documentController.uploadDocument(
-    file: file,
-    type: 'pdf',
-  );
+        final uploadedDoc = await _documentController.uploadDocument(
+          file: file,
+          type: 'pdf',
+        );
 
-  if (uploadedDoc != null) {
-    Map<String, dynamic> newFile = {
-      'name': uploadedDoc.name,
-      'path': uploadedDoc.url,
-      'timestamp': uploadedDoc.uploadedAt.toString(),
-      'type': uploadedDoc.type,
-      'text': '', 
-    };
+        if (uploadedDoc != null) {
+          Map<String, dynamic> newFile = {
+            'name': uploadedDoc.fileName,
+            'path': uploadedDoc.url,
+            'timestamp': uploadedDoc.uploadedAt.toString(),
+            'type': uploadedDoc.fileType,
+            'text': '', 
+          };
 
-    widget.onFileUploaded(newFile);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Uploaded: ${uploadedDoc.name}')));
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed')));
-  }
-}
-
+          widget.onFileUploaded(newFile);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Uploaded: ${uploadedDoc.fileName}')));
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed')));
+        }
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No PDF selected')));
+      }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error picking PDF: $e')),
       );
@@ -143,7 +149,6 @@ if (result != null) {
       final XFile? pickedFile = await picker.pickImage(source: source);
       
       if (pickedFile != null) {
-        // Navigate to Smart Scan screen with the selected image
         if (!mounted) return;
         Navigator.push(
           context,
@@ -152,6 +157,11 @@ if (result != null) {
               onFileUploaded: widget.onFileUploaded,
             ),
           ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No image selected')),
         );
       }
     } catch (e) {

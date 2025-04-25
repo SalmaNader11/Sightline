@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../data/data_model/user_data.dart';
+import '../models/user_data.dart';
 import '../services/firebase_service.dart';
 import '../providers/auth_provider.dart';
 import 'sign_in_screen.dart';

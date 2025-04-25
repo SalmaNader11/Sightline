@@ -1,20 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../data/data_model/user_data.dart';
+import 'models/user_data.dart';
+
 import 'screens/home_screen.dart';
 import 'screens/user_info.dart';
 import 'screens/settings_screen.dart';
-import 'screens/sign_in_screen.dart'; // ✅ Add this import
+import 'screens/sign_in_screen.dart';
 
 final ValueNotifier<bool> isDarkThemeNotifier = ValueNotifier(false);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp();
+  testFirestore(); // Test Firestore connectivity
   runApp(DyslexiaApp());
+}
+
+// Simple Firestore test function
+void testFirestore() async {
+  try {
+    await FirebaseFirestore.instance.collection('test').add({'timestamp': DateTime.now()});
+    print('Firestore write successful!');
+  } catch (e) {
+    print('Firestore error: '
+        '[31m'
+        '[1m'
+        '[41m'
+        '[0m' // Red background for visibility
+        '[0m' // Reset
+        '[31m$e[0m');
+  }
 }
 
 class DyslexiaApp extends StatelessWidget {

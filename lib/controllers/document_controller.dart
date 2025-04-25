@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/document_model.dart';
-import '../services/file_upload_controller.dart';
+import '../controllers/file_upload_controller.dart';
 
 class DocumentController with ChangeNotifier {
   final FileUploadController _uploadController = FileUploadController();

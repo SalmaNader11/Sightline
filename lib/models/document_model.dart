@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DocumentModel {
   final String id;
-  final String uid;
+  final String userId;
   final String fileName;
   final String fileType;
   final String url;
@@ -15,7 +15,7 @@ class DocumentModel {
 
   DocumentModel({
     required this.id,
-    required this.uid,
+    required this.userId,
     required this.fileName,
     required this.fileType,
     required this.url,
@@ -30,7 +30,7 @@ class DocumentModel {
   factory DocumentModel.fromMap(Map<String, dynamic> map, String id) {
     return DocumentModel(
       id: id,
-      uid: map['uid'] ?? '',
+      userId: map['userId'] ?? '',
       fileName: map['fileName'] ?? '',
       fileType: map['fileType'] ?? '',
       url: map['url'] ?? '',
@@ -45,7 +45,7 @@ class DocumentModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'uid': uid,
+      'userId': userId,
       'fileName': fileName,
       'fileType': fileType,
       'url': url,

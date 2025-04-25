@@ -51,16 +51,16 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
                     margin: EdgeInsets.symmetric(vertical: 8.0),
                     child: ListTile(
                       leading: Icon(
-                        file.type == 'pdf'
+                        file.fileType == 'pdf'
                             ? Icons.picture_as_pdf
                             : Icons.insert_drive_file,
                         color: Color(0xFF1E90FF),
                         size: 40,
                       ),
                       title: Text(
-                        file.name.length > 20
-                            ? '${file.name.substring(0, 20)}...'
-                            : file.name,
+                        file.fileName.length > 20
+                            ? '${file.fileName.substring(0, 20)}...'
+                            : file.fileName,
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.black87,
@@ -75,7 +75,7 @@ class _ViewAllScreenState extends State<ViewAllScreen> {
                       ),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Tapped: ${file.name}')),
+                          SnackBar(content: Text('Tapped: ${file.fileName}')),
                         );
                       },
                     ),

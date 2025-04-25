@@ -66,9 +66,15 @@ class FirebaseService {
 
   /// Get user preferences
   Future<Map<String, dynamic>?> getUserPreferences(String uid) async {
-    final doc = await _firestore.collection('users').doc(uid).get();
-    if (!doc.exists) return null;
-    return doc.data()?['preferences'];
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (!doc.exists) throw Exception('User preferences not found');
+      final prefs = doc.data()?['preferences'];
+      if (prefs == null) throw Exception('User preferences are missing');
+      return prefs;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// Update entire preferences object
@@ -152,6 +158,20 @@ class FirebaseService {
   /// Save document metadata to Firestore
   Future<void> saveDocumentMetadata(DocumentModel doc) async {
     await _firestore.collection('documents').doc(doc.id).set(doc.toMap());
+  }
+
+  /// Get full user profile by uid
+  Future<UserData?> getUserProfile(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (!doc.exists) return null;
+      final data = doc.data();
+      if (data == null) return null;
+      return UserData.fromMap(data, uid);
+    } catch (e) {
+      print('Error fetching user profile: $e');
+      return null;
+    }
   }
 
   FirebaseFirestore get firestore => _firestore;

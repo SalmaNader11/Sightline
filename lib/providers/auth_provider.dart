@@ -148,4 +148,12 @@ class AuthProvider with ChangeNotifier {
     _currentUser = _currentUser!.copyWith(preferences: updated);
     notifyListeners();
   }
+
+  /// Update all preferences (utility for settings)
+  Future<void> updatePreferences(Map<String, dynamic> newPrefs) async {
+    if (_currentUser == null) return;
+    await _firebaseService.updateUserPreferences(_currentUser!.uid, newPrefs);
+    _currentUser = _currentUser!.copyWith(preferences: newPrefs);
+    notifyListeners();
+  }
 }
